@@ -1,0 +1,10 @@
+version: '3.7'
+
+services:
+  postgres:
+    build: './service'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: myPassword
+      POSTGRES_DB: mydb
+    restart: always
