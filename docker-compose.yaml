@@ -8,3 +8,7 @@ services:
       POSTGRES_PASSWORD: myPassword
       POSTGRES_DB: mydb
     restart: always
+
+  nats:
+    image: 'nats-streaming:0.9.2'
+    restart: always
