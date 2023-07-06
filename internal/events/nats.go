@@ -26,7 +26,7 @@ func NewNatsEventStore(url string) (*NatsEventStore, error) {
 	}, nil
 }
 
-// Function to encode a specific message, to send information related to that
+// Encode a specific message, to send information related to that
 func (natsStore *NatsEventStore) encodeMessage(message Message) ([]byte, error) {
 	b := bytes.Buffer{}
 
@@ -36,6 +36,14 @@ func (natsStore *NatsEventStore) encodeMessage(message Message) ([]byte, error) 
 	}
 
 	return b.Bytes(), nil // Return message encoded
+}
+
+// Deocode bytes of data into a specific interfae type (kind must be Message interface)
+func (natsStore *NatsEventStore) decodeMessage(data []byte, message interface{}) error {
+	b := bytes.Buffer{}
+	b.Write(data)
+	// This line is going to try to return the bytes into the message interface
+	return gob.NewDecoder(&b).Decode(message)
 }
 
 func (natsStore *NatsEventStore) Close() {
@@ -65,4 +73,42 @@ func (natsStore *NatsEventStore) PublishCreatedFeed(ctx context.Context, feed *m
 	// Publish a specific message with his data
 	// This is how we are going to tell each connected microservice when there is a new feed
 	return natsStore.conn.Publish(message.Type(), data)
+}
+
+func (natsStore *NatsEventStore) OnCreatedFeed(function func(CreatedFeedMessage)) (err error) {
+	message := CreatedFeedMessage{}
+
+	// We are going to trying to suscribe into a specific message
+	natsStore.feedCreatedSub, err = natsStore.conn.Subscribe(message.Type(), func(msg *nats.Msg) {
+		natsStore.decodeMessage(msg.Data, &message) // Decode message into Message type
+		function(message)                           // Return the message to sended function
+	})
+	return
+}
+
+func (natsStore *NatsEventStore) SuscribeCreatedFeed(ctx context.Context) (<-chan CreatedFeedMessage, error) {
+	var err error
+	message := CreatedFeedMessage{}
+
+	natsStore.feedCreatedChan = make(chan CreatedFeedMessage, 64) // Channel for new feeds created
+	ch := make(chan *nats.Msg, 64)                                // Channel for information from nats service (byte data)
+
+	// Suscribre Nat service into a new channel
+	natsStore.feedCreatedSub, err = natsStore.conn.ChanSubscribe(message.Type(), ch)
+	if err != nil {
+		return nil, err
+	}
+
+	// New concurrent methods to handle channel interactions
+	go func() {
+		for {
+			select {
+			case msg := <-ch: // When channel recives data
+				natsStore.decodeMessage(msg.Data, &message) // Decode message
+				natsStore.feedCreatedChan <- message        // Send message decoded into created feed channel
+			}
+		}
+	}()
+
+	return (<-chan CreatedFeedMessage)(natsStore.feedCreatedChan), nil
 }
