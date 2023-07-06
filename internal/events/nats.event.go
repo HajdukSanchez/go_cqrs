@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/gob"
 
+	"github.com/hajduksanchez/go_cqrs/internal/events/messages"
 	"github.com/hajduksanchez/go_cqrs/internal/models"
 	"github.com/nats-io/nats.go"
 )
 
 type NatsEventStore struct {
-	conn            *nats.Conn              // Connection to nats
-	feedCreatedSub  *nats.Subscription      // Suscribition to connect when a event is created
-	feedCreatedChan chan CreatedFeedMessage // Connected channel
+	conn            *nats.Conn                       // Connection to nats
+	feedCreatedSub  *nats.Subscription               // Suscribition to connect when a event is created
+	feedCreatedChan chan messages.CreatedFeedMessage // Connected channel
 }
 
 // Constructor to create a new Struct
@@ -27,7 +28,7 @@ func NewNatsEventStore(url string) (*NatsEventStore, error) {
 }
 
 // Encode a specific message, to send information related to that
-func (natsStore *NatsEventStore) encodeMessage(message Message) ([]byte, error) {
+func (natsStore *NatsEventStore) encodeMessage(message messages.Message) ([]byte, error) {
 	b := bytes.Buffer{}
 
 	err := gob.NewEncoder(&b).Encode(message) // Encode message into bytes
@@ -57,7 +58,7 @@ func (natsStore *NatsEventStore) Close() {
 }
 
 func (natsStore *NatsEventStore) PublishCreatedFeed(ctx context.Context, feed *models.Feed) error {
-	message := CreatedFeedMessage{
+	message := messages.CreatedFeedMessage{
 		Id:          feed.Id,
 		Title:       feed.Title,
 		Description: feed.Description,
@@ -75,8 +76,8 @@ func (natsStore *NatsEventStore) PublishCreatedFeed(ctx context.Context, feed *m
 	return natsStore.conn.Publish(message.Type(), data)
 }
 
-func (natsStore *NatsEventStore) OnCreatedFeed(function func(CreatedFeedMessage)) (err error) {
-	message := CreatedFeedMessage{}
+func (natsStore *NatsEventStore) OnCreatedFeed(function func(messages.CreatedFeedMessage)) (err error) {
+	message := messages.CreatedFeedMessage{}
 
 	// We are going to trying to suscribe into a specific message
 	natsStore.feedCreatedSub, err = natsStore.conn.Subscribe(message.Type(), func(msg *nats.Msg) {
@@ -86,12 +87,12 @@ func (natsStore *NatsEventStore) OnCreatedFeed(function func(CreatedFeedMessage)
 	return
 }
 
-func (natsStore *NatsEventStore) SuscribeCreatedFeed(ctx context.Context) (<-chan CreatedFeedMessage, error) {
+func (natsStore *NatsEventStore) SuscribeCreatedFeed(ctx context.Context) (<-chan messages.CreatedFeedMessage, error) {
 	var err error
-	message := CreatedFeedMessage{}
+	message := messages.CreatedFeedMessage{}
 
-	natsStore.feedCreatedChan = make(chan CreatedFeedMessage, 64) // Channel for new feeds created
-	ch := make(chan *nats.Msg, 64)                                // Channel for information from nats service (byte data)
+	natsStore.feedCreatedChan = make(chan messages.CreatedFeedMessage, 64) // Channel for new feeds created
+	ch := make(chan *nats.Msg, 64)                                         // Channel for information from nats service (byte data)
 
 	// Suscribre Nat service into a new channel
 	natsStore.feedCreatedSub, err = natsStore.conn.ChanSubscribe(message.Type(), ch)
@@ -110,5 +111,5 @@ func (natsStore *NatsEventStore) SuscribeCreatedFeed(ctx context.Context) (<-cha
 		}
 	}()
 
-	return (<-chan CreatedFeedMessage)(natsStore.feedCreatedChan), nil
+	return (<-chan messages.CreatedFeedMessage)(natsStore.feedCreatedChan), nil
 }
