@@ -16,6 +16,11 @@ type EventStore interface {
 
 var _eventStore EventStore
 
+// Create a new instance of the evet store to works as dependency injection
+func SetEventStore(eventStore EventStore) {
+	_eventStore = eventStore
+}
+
 // Event to close connection with the store
 func Close() {
 	_eventStore.Close()
