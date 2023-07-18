@@ -31,3 +31,19 @@ services:
       POSTGRES_PASSWORD: myPassword
       POSTGRES_DB: mydb
       NATS_ADDRESS: nats:4222
+  
+  query:
+    build: .
+    command: query-service
+    depends_on:
+      - postgres
+      - nats
+      - elastic
+    ports:
+      - 8080
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: myPassword
+      POSTGRES_DB: mydb
+      NATS_ADDRESS: nats:4222
+      ELASTCISEARCH_ADDRESS: elasticsearch:9200

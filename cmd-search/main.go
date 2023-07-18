@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hajduksanchez/go_cqrs/internal/database"
 	"github.com/hajduksanchez/go_cqrs/internal/events"
+	"github.com/hajduksanchez/go_cqrs/internal/handlers"
 	"github.com/hajduksanchez/go_cqrs/internal/repository"
 	"github.com/hajduksanchez/go_cqrs/internal/search"
 	"github.com/kelseyhightower/envconfig"
@@ -61,7 +62,7 @@ func main() {
 	defer events.Close()
 
 	// Suscribe elastic search service into an event
-	err = events.OnCreatedFeed()
+	err = events.OnCreatedFeed(handlers.OnCreatedFeed)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,6 +79,7 @@ func newRouter() (router *mux.Router) {
 	router = mux.NewRouter() // Create router
 
 	// Add new handler for routes
-	// router.HandleFunc("/feeds", handlers.CreatedFeedHandler).Methods(http.MethodPost)
+	router.HandleFunc("/feeds", handlers.ListFeedHandler).Methods(http.MethodGet)
+	router.HandleFunc("/search", handlers.SearchHandler).Methods(http.MethodGet)
 	return
 }

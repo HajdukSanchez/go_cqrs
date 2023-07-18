@@ -23,7 +23,8 @@ COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 # Copy our code
-COPY cmd cmd
+COPY cmd-feed cmd-feed
+COPY cmd-search cmd-search
 COPY internal internal
 COPY service service
 
