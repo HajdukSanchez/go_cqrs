@@ -1,8 +1,8 @@
-version: '3.7'
+version: 3.7
 
 services:
   postgres:
-    build: './service'
+    build: ./service
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: myPassword
@@ -10,10 +10,24 @@ services:
     restart: always
 
   nats:
-    image: 'nats-streaming:0.9.2'
+    image: nats-streaming:0.9.2
     restart: always
   
   elastic:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:6.2.3"
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.3
     environment:
-      - "dicovery.type=single-node"
+      - dicovery.type=single-node
+
+  feed:
+    build: .
+    command: feed-service
+    depends_on:
+      - postgres
+      - nats
+    ports:
+      - 8080
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: myPassword
+      POSTGRES_DB: mydb
+      NATS_ADDRESS: nats:4222
