@@ -47,3 +47,13 @@ services:
       POSTGRES_DB: mydb
       NATS_ADDRESS: nats:4222
       ELASTCISEARCH_ADDRESS: elasticsearch:9200
+
+  pusher:
+    build: .
+    command: pusher-service
+    depends_on:
+      - nats
+    ports:
+      - 8080
+    environment:
+      NATS_ADDRESS: nats:4222
