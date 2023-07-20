@@ -1,6 +1,6 @@
 # Args variables
 ## Go version to use
-ARG GO_VERSION=1.16.6
+ARG GO_VERSION=1.20.4
 
 # ---------- COMPILATION PROCESS ----------
 # Go version

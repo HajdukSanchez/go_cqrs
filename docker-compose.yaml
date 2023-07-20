@@ -14,13 +14,13 @@ services:
     restart: always
   
   elastic:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:6.2.3"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.17.8"
     environment:
-      - "dicovery.type=single-node"
+      - "discovery.type=single-node"
 
   feed:
     build: "."
-    command: "feed-service"
+    command: "cmd-feed"
     depends_on:
       - "postgres"
       - "nats"
@@ -34,7 +34,7 @@ services:
   
   query:
     build: "."
-    command: "query-service"
+    command: "cmd-search"
     depends_on:
       - "postgres"
       - "nats"
@@ -50,7 +50,7 @@ services:
 
   pusher:
     build: "."
-    command: "pusher-service"
+    command: "cmd-pusher"
     depends_on:
       - "nats"
     ports:
